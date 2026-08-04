@@ -1,0 +1,208 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .btn {
+    @apply inline-flex min-h-tap cursor-pointer items-center justify-center gap-1.5 rounded-full border border-line bg-panel-solid px-[1.1rem] py-2.5 font-semibold text-ink transition active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .btn--primary {
+    @apply border-accent bg-accent text-white hover:bg-accent-deep;
+  }
+
+  .btn--soft {
+    @apply border-transparent bg-accent-soft text-accent-deep;
+  }
+
+  .btn--danger {
+    @apply bg-danger-soft text-danger;
+    border-color: rgba(192, 57, 43, 0.2);
+  }
+
+  .btn--liked {
+    @apply bg-liked-soft text-liked;
+    border-color: rgba(196, 92, 38, 0.25);
+  }
+
+  .btn--done {
+    @apply border-transparent bg-done-soft text-done;
+  }
+
+  .btn--block {
+    @apply w-full;
+  }
+
+  .btn--ghost {
+    @apply min-h-[2.4rem] border-transparent bg-transparent px-2.5 text-muted hover:bg-white/55 hover:text-ink;
+  }
+
+  .btn--icon {
+    @apply min-w-tap px-3;
+  }
+}
+
+:root {
+  --ink: #14201c;
+  --ink-soft: #2a3a34;
+  --muted: #66756e;
+  --paper: #f2f5f3;
+  --panel: rgba(255, 255, 255, 0.82);
+  --panel-solid: #ffffff;
+  --line: rgba(20, 32, 28, 0.1);
+  --accent: #1f7a6c;
+  --accent-deep: #145a50;
+  --accent-soft: #d8efe9;
+  --danger: #c0392b;
+  --danger-soft: #fdecea;
+  --liked: #c45c26;
+  --liked-soft: #fff1e8;
+  --done: #1f7a6c;
+  --done-bg: #e8f5f1;
+  --shadow: 0 12px 40px rgba(20, 32, 28, 0.08);
+  --shadow-sm: 0 4px 16px rgba(20, 32, 28, 0.06);
+  --radius: 18px;
+  --radius-sm: 12px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --tap: 44px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  color: var(--ink);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  background-color: var(--paper);
+  background-image:
+    radial-gradient(ellipse 90% 55% at 0% -10%, #cfe8e0 0%, transparent 55%),
+    radial-gradient(ellipse 70% 45% at 100% 0%, #d9e4ef 0%, transparent 50%),
+    radial-gradient(ellipse 50% 40% at 50% 110%, #e8ddd0 0%, transparent 55%),
+    linear-gradient(180deg, #eef3f0 0%, var(--paper) 45%, #e7eeea 100%);
+  background-attachment: fixed;
+}
+
+a {
+  color: var(--accent-deep);
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+  touch-action: manipulation;
+}
+
+input,
+textarea {
+  color: var(--ink);
+  background: var(--panel-solid);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 0.85rem 0.95rem;
+  min-height: var(--tap);
+  width: 100%;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+input:focus,
+textarea:focus {
+  outline: none;
+  border-color: rgba(31, 122, 108, 0.55);
+  box-shadow: 0 0 0 4px rgba(31, 122, 108, 0.12);
+}
+
+textarea {
+  resize: vertical;
+  min-height: 110px;
+  line-height: 1.45;
+}
+
+/* Leaflet maps */
+.map-wrap {
+  height: min(58dvh, 420px);
+  border-radius: calc(var(--radius) - 4px);
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: #d7e2dc;
+}
+
+.map {
+  width: 100%;
+  height: 100%;
+}
+
+.note-location-map {
+  width: 100%;
+  height: 200px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: #e8eeea;
+}
+
+.note-location-map--pick {
+  cursor: crosshair;
+}
+
+.note-location-map__canvas {
+  width: 100%;
+  height: 100%;
+}
+
+/* react-day-picker accents */
+.due-rdp {
+  max-width: 100%;
+}
+
+.due-rdp .rdp-months {
+  justify-content: center;
+  max-width: 100%;
+}
+
+.due-rdp .rdp-month {
+  max-width: 100%;
+}
+
+.due-rdp .rdp-month_caption {
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.due-rdp .rdp-selected .rdp-day_button {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+}
+
+.due-rdp .rdp-today:not(.rdp-selected) .rdp-day_button {
+  color: var(--accent-deep);
+  font-weight: 700;
+}
+
+@media (min-width: 720px) {
+  .map-wrap {
+    height: min(70dvh, 560px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
