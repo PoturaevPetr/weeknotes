@@ -16,7 +16,7 @@ const display = Source_Serif_4({
 
 export const metadata: Metadata = {
   title: "Weeknotes",
-  description: "Collaborative boards for shared notes",
+  description: "Совместные идеи и планы: куда сходим, что посмотрим, что попробуем",
   applicationName: "Weeknotes",
   appleWebApp: {
     capable: true,
@@ -37,7 +37,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   viewportFit: "cover",
-  themeColor: "#f2f5f3",
+  themeColor: "#faf5ef",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

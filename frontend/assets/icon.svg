@@ -1,0 +1,30 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ef7a52"/>
+      <stop offset="1" stop-color="#d4552f"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <g transform="rotate(-5 256 256)">
+    <!-- note sheet with folded top-right corner -->
+    <path
+      d="M168 128 h146 l62 62 v166 a28 28 0 0 1 -28 28 H168 a28 28 0 0 1 -28 -28 V156 a28 28 0 0 1 28 -28 z"
+      fill="#fffdfa"
+    />
+    <path d="M314 128 l62 62 h-42 a20 20 0 0 1 -20 -20 z" fill="#f7e2cf"/>
+    <!-- text lines -->
+    <rect x="176" y="226" width="160" height="17" rx="8.5" fill="#f0c4ab"/>
+    <rect x="176" y="270" width="118" height="17" rx="8.5" fill="#f0c4ab"/>
+    <rect x="176" y="314" width="138" height="17" rx="8.5" fill="#f0c4ab"/>
+  </g>
+  <!-- sparkles -->
+  <path
+    d="M392 88l10.8 27.2L430 126l-27.2 10.8L392 164l-10.8-27.2L354 126l27.2-10.8L392 88z"
+    fill="#fdf0d5"
+  />
+  <path
+    d="M118 372l7.6 19.2 19.2 7.6-19.2 7.6-7.6 19.2-7.6-19.2-19.2-7.6 19.2-7.6 7.6-19.2z"
+    fill="#fdf0d5"
+  />
+</svg>

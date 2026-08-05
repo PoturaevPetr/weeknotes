@@ -104,7 +104,7 @@ export function AttachmentDropzone({
           </svg>
         </span>
         <span className="max-w-full text-[0.95rem] font-bold text-ink">
-          {full ? "Больше нельзя добавить" : "Перетащите файлы сюда"}
+          {full ? "Больше нельзя добавить" : "Перетащите фото сюда"}
         </span>
         <span className="max-w-full text-balance text-[0.8rem] leading-snug text-muted">
           или нажмите, чтобы выбрать фото

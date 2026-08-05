@@ -1,5 +1,7 @@
 "use client";
 
+import { Plus } from "lucide-react";
+
 type Props = {
   label: string;
   onClick: () => void;
@@ -22,10 +24,10 @@ export function ListAddBar({ label, onClick, title }: Props) {
         aria-label={label}
       >
         <span
-          className="grid h-6 w-6 place-items-center rounded-full bg-accent text-sm font-bold text-white"
+          className="grid h-6 w-6 place-items-center rounded-full bg-accent text-white"
           aria-hidden
         >
-          +
+          <Plus size={15} strokeWidth={2.75} />
         </span>
         <span>{label}</span>
       </button>

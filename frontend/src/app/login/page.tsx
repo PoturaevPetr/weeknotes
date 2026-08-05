@@ -27,7 +27,7 @@ export default function LoginPage() {
       await login(email, password);
       router.replace("/boards");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Не удалось войти");
+      setError(err instanceof ApiError ? err.message : "Не получилось войти — проверьте почту и пароль");
     } finally {
       setBusy(false);
     }

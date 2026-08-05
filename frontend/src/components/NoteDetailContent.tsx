@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import { Check, Clock, Heart, MoreHorizontal, Sparkles, X } from "lucide-react";
 
 import { AttachmentDropzone } from "@/components/AttachmentDropzone";
 import { DueDatePicker } from "@/components/DueDatePicker";
@@ -8,7 +9,7 @@ import { EditLocationField } from "@/components/EditLocationField";
 import { LocationMapAccordion } from "@/components/LocationMapAccordion";
 import { MediaLightbox } from "@/components/MediaLightbox";
 import { api } from "@/lib/api";
-import { formatDueDate, formatNoteTime, initials, isDueSoon } from "@/lib/format";
+import { avatarPalette, formatDueDate, formatNoteTime, initials, isDueSoon } from "@/lib/format";
 import {
   MAX_ATTACHMENTS,
   mediaSrc,
@@ -25,6 +26,8 @@ type Props = {
   onToggleDone: (note: Note) => void;
   onDelete: (note: Note) => void;
   onUpdated: (note: Note) => void;
+  onAccept?: (note: Note) => void;
+  onReject?: (note: Note) => void;
 };
 
 export function NoteDetailContent({
@@ -35,6 +38,8 @@ export function NoteDetailContent({
   onToggleDone,
   onDelete,
   onUpdated,
+  onAccept,
+  onReject,
 }: Props) {
   const [detail, setDetail] = useState<NoteDetail | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -50,6 +55,7 @@ export function NoteDetailContent({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -59,6 +65,7 @@ export function NoteDetailContent({
     setNewFiles([]);
     setError(null);
     setLightboxIndex(null);
+    setMenuOpen(false);
     api
       .getNote(token, note.id)
       .then((d) => {
@@ -74,7 +81,7 @@ export function NoteDetailContent({
         }
       })
       .catch(() => {
-        if (!cancelled) setLoadError("Не удалось загрузить вложения");
+        if (!cancelled) setLoadError("Не получилось загрузить фото");
       });
     return () => {
       cancelled = true;
@@ -97,11 +104,12 @@ export function NoteDetailContent({
   const done = view.status === "done";
   const urgent = isDueSoon(view.due_at, view.status);
   const isAuthor = view.author.id === currentUserId;
+  const isProposed = view.lifecycle === "proposed";
   const canEdit = isAuthor;
   const canDelete = isAuthor;
+  const canModerate = isProposed && !isAuthor && (!!onAccept || !!onReject);
   const attachments = detail?.attachments ?? [];
   const slotsLeft = Math.max(0, MAX_ATTACHMENTS - attachments.length);
-  const actionCount = 2 + (canEdit ? 1 : 0) + (canDelete ? 1 : 0);
 
   async function removeExisting(attachmentId: string) {
     setBusy(true);
@@ -112,7 +120,7 @@ export function NoteDetailContent({
       const fresh = await api.getNote(token, note.id);
       setDetail(fresh);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Не удалось удалить вложение");
+      setError(err instanceof Error ? err.message : "Не получилось удалить фото — попробуйте ещё раз");
     } finally {
       setBusy(false);
     }
@@ -146,7 +154,7 @@ export function NoteDetailContent({
       onUpdated(updated);
       setEditing(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Не удалось сохранить");
+      setError(err instanceof Error ? err.message : "Не получилось сохранить — попробуйте ещё раз");
     } finally {
       setBusy(false);
     }
@@ -193,7 +201,7 @@ export function NoteDetailContent({
                   <img
                     src={mediaSrc(a.mime_type, a.data_base64)}
                     alt={a.filename}
-                    className="block max-h-[220px] w-full rounded-panel border border-line bg-[#e8eeea] object-cover"
+                    className="block max-h-[220px] w-full rounded-panel border border-line bg-[#f2ebe1] object-cover"
                   />
                   <button
                     type="button"
@@ -252,7 +260,11 @@ export function NoteDetailContent({
     <div className="flex h-full min-h-0 flex-col overflow-x-hidden overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch]">
       <div className="mb-2.5 flex items-start gap-2.5">
         <div
-          className="grid h-[2.1rem] w-[2.1rem] shrink-0 place-items-center rounded-full bg-accent-soft text-[0.8rem] font-bold text-accent-deep"
+          className="grid h-[2.1rem] w-[2.1rem] shrink-0 place-items-center rounded-full text-[0.8rem] font-bold"
+          style={{
+            background: avatarPalette(view.author.display_name).bg,
+            color: avatarPalette(view.author.display_name).fg,
+          }}
           aria-hidden
         >
           {initials(view.author.display_name)}
@@ -265,6 +277,13 @@ export function NoteDetailContent({
         </div>
       </div>
 
+      {isProposed && (
+        <p className="mb-2 inline-flex items-center justify-center gap-1.5 self-center rounded-full bg-[#f7e9c4] px-3 py-1.5 text-center text-[0.82rem] font-semibold text-[#8a6b1f]">
+          <Sparkles size={14} aria-hidden />
+          Идея — решите вместе, берёте ли в планы
+        </p>
+      )}
+
       {view.due_at && (
         <div
           className={[
@@ -272,8 +291,8 @@ export function NoteDetailContent({
             urgent ? "bg-amber-100 text-amber-900" : "bg-white/70 text-muted",
           ].join(" ")}
         >
-          {urgent && <span aria-hidden>⏳</span>}
-          <span>Срок: {formatDueDate(view.due_at)}</span>
+          <Clock size={13} aria-hidden />
+          <span>до {formatDueDate(view.due_at)}</span>
         </div>
       )}
 
@@ -289,7 +308,7 @@ export function NoteDetailContent({
 
       {loadError && <p className="m-0 text-[0.9rem] text-muted">{loadError}</p>}
       {!detail && (note.attachments?.length ?? 0) > 0 && !loadError && (
-        <p className="m-0 text-[0.9rem] text-muted">Загрузка вложений…</p>
+        <p className="m-0 text-[0.9rem] text-muted">Загружаем фото…</p>
       )}
 
       {attachments.length > 0 && (
@@ -306,7 +325,7 @@ export function NoteDetailContent({
               <img
                 src={mediaSrc(a.mime_type, a.data_base64)}
                 alt={a.filename}
-                className="pointer-events-none block max-h-[220px] w-full rounded-panel border border-line bg-[#e8eeea] object-cover"
+                className="pointer-events-none block max-h-[220px] w-full rounded-panel border border-line bg-[#f2ebe1] object-cover"
               />
             </button>
           ))}
@@ -322,44 +341,95 @@ export function NoteDetailContent({
         />
       )}
 
-      <div
-        className={`mt-4 grid gap-1.5 ${
-          actionCount === 3 ? "grid-cols-3" : "grid-cols-2"
-        }`}
-      >
-        <button
-          type="button"
-          className={`btn w-full px-2 text-[0.88rem] ${view.liked_by_me ? "btn--liked" : ""}`}
-          onClick={() => onLike(view)}
-          aria-pressed={view.liked_by_me}
-        >
-          {view.liked_by_me ? "♥" : "♡"} {view.likes_count}
-        </button>
-        <button
-          type="button"
-          className={`btn w-full px-2 text-[0.88rem] ${done ? "btn--done" : "btn--soft"}`}
-          onClick={() => onToggleDone(view)}
-        >
-          {done ? "Вернуть" : "Готово"}
-        </button>
-        {canEdit && (
-          <button
-            type="button"
-            className="btn w-full px-2 text-[0.88rem]"
-            onClick={startEdit}
-            disabled={!detail}
-          >
-            Изменить
-          </button>
+      <div className="mt-4 flex items-center gap-1.5">
+        {canModerate && (
+          <>
+            <button
+              type="button"
+              className="btn btn--primary flex-1 px-2 text-[0.88rem]"
+              disabled={busy}
+              onClick={() => onAccept?.(view)}
+            >
+              <Check size={16} aria-hidden />
+              Берём!
+            </button>
+            <button
+              type="button"
+              className="btn flex-1 px-2 text-[0.88rem] text-muted"
+              disabled={busy}
+              onClick={() => onReject?.(view)}
+            >
+              <X size={16} aria-hidden />
+              В другой раз
+            </button>
+          </>
         )}
-        {canDelete && (
-          <button
-            type="button"
-            className="btn btn--danger w-full px-2 text-[0.88rem]"
-            onClick={() => onDelete(view)}
-          >
-            Удалить
-          </button>
+        {!isProposed && (
+          <>
+            <button
+              type="button"
+              className={`btn flex-1 px-2 text-[0.88rem] ${view.liked_by_me ? "btn--liked" : ""}`}
+              onClick={() => onLike(view)}
+              aria-pressed={view.liked_by_me}
+            >
+              <Heart
+                size={16}
+                aria-hidden
+                fill={view.liked_by_me ? "currentColor" : "none"}
+              />
+              {view.likes_count}
+            </button>
+            <button
+              type="button"
+              className={`btn flex-1 px-2 text-[0.88rem] ${done ? "btn--done" : "btn--soft"}`}
+              onClick={() => onToggleDone(view)}
+            >
+              <Check size={16} aria-hidden />
+              {done ? "Вернуть в планы" : "Сделали!"}
+            </button>
+          </>
+        )}
+        {(canEdit || canDelete) && (
+          <div className="relative ml-auto shrink-0">
+            <button
+              type="button"
+              className="btn px-3"
+              aria-label="Ещё"
+              aria-expanded={menuOpen}
+              onClick={() => setMenuOpen((o) => !o)}
+            >
+              <MoreHorizontal size={18} aria-hidden />
+            </button>
+            {menuOpen && (
+              <div className="absolute bottom-full right-0 z-10 mb-1.5 min-w-[10.5rem] rounded-panel border border-line bg-white p-1 shadow-card">
+                {canEdit && (
+                  <button
+                    type="button"
+                    className="block w-full rounded-[0.6rem] border-0 bg-transparent px-3 py-2 text-left text-[0.92rem] text-ink transition hover:bg-accent-soft"
+                    disabled={!detail}
+                    onClick={() => {
+                      setMenuOpen(false);
+                      startEdit();
+                    }}
+                  >
+                    Изменить
+                  </button>
+                )}
+                {canDelete && (
+                  <button
+                    type="button"
+                    className="block w-full rounded-[0.6rem] border-0 bg-transparent px-3 py-2 text-left text-[0.92rem] text-danger transition hover:bg-danger-soft"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      onDelete(view);
+                    }}
+                  >
+                    Удалить
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         )}
       </div>
     </div>

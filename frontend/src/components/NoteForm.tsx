@@ -1,10 +1,11 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
+import { ChevronRight, Clock, ImagePlus, MapPin, Sparkles } from "lucide-react";
 
 import { AttachmentDropzone } from "@/components/AttachmentDropzone";
 import { DueDatePicker } from "@/components/DueDatePicker";
-import { explainGeoFailure, requestGeoCoords } from "@/lib/geolocation";
+import { EditLocationField } from "@/components/EditLocationField";
 import { toAttachmentInputs, type DraftAttachment } from "@/lib/media";
 import type { AttachmentInput } from "@/lib/types";
 
@@ -19,45 +20,34 @@ type Props = {
   ) => Promise<void>;
   coords: Coords;
   onCoordsChange: (coords: Coords) => void;
-  onOpenMap?: () => void;
 };
 
-export function NoteForm({ onSubmit, coords, onCoordsChange, onOpenMap }: Props) {
+export function NoteForm({ onSubmit, coords, onCoordsChange }: Props) {
   const [text, setText] = useState("");
   const [dueAt, setDueAt] = useState<string | null>(null);
   const [files, setFiles] = useState<DraftAttachment[]>([]);
   const [busy, setBusy] = useState(false);
-  const [geoBusy, setGeoBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [geoError, setGeoError] = useState<string | null>(null);
+  const [showDetails, setShowDetails] = useState(false);
+
+  useEffect(() => {
+    if (coords) setShowDetails(true);
+  }, [coords]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!text.trim()) return;
     setBusy(true);
     setError(null);
-    setGeoError(null);
     try {
       await onSubmit(text.trim(), coords, dueAt, toAttachmentInputs(files));
       setText("");
       setDueAt(null);
       setFiles([]);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Не удалось создать заметку");
+      setError(err instanceof Error ? err.message : "Что-то пошло не так — попробуйте ещё раз");
     } finally {
       setBusy(false);
-    }
-  }
-
-  async function requestMyLocation() {
-    setGeoError(null);
-    setGeoBusy(true);
-    try {
-      onCoordsChange(await requestGeoCoords());
-    } catch (err) {
-      setGeoError(explainGeoFailure(err));
-    } finally {
-      setGeoBusy(false);
     }
   }
 
@@ -65,73 +55,77 @@ export function NoteForm({ onSubmit, coords, onCoordsChange, onOpenMap }: Props)
     <form className="flex min-h-0 min-w-0 flex-1 flex-col" onSubmit={handleSubmit}>
       <div className="min-h-0 min-w-0 flex-1 space-y-3 overflow-x-hidden overflow-y-auto overscroll-contain pb-3 [-webkit-overflow-scrolling:touch]">
         <label className="flex min-w-0 flex-col gap-1.5">
-          <span className="text-[0.82rem] font-semibold tracking-wide text-muted">Текст</span>
+          <span className="text-[0.82rem] font-semibold tracking-wide text-muted">Ваша идея</span>
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
             rows={3}
-            placeholder="Идея, задача, мысль…"
+            placeholder="Куда сходить, что попробовать, о чём не забыть…"
             required
             autoFocus
             className="min-w-0"
           />
         </label>
 
-        <div className="flex min-w-0 flex-col gap-1.5">
-          <span className="text-[0.82rem] font-semibold tracking-wide text-muted">Срок исполнения</span>
-          <DueDatePicker value={dueAt} onChange={setDueAt} disabled={busy} />
-        </div>
-
-        <div className="flex min-w-0 flex-col gap-1.5">
-          <span className="text-[0.82rem] font-semibold tracking-wide text-muted">Вложения</span>
-          <AttachmentDropzone
-            files={files}
-            onChange={setFiles}
-            onError={setError}
-            disabled={busy}
+        <button
+          type="button"
+          className="flex min-h-9 w-full items-center gap-1.5 border-0 bg-transparent p-0 text-left text-[0.9rem] font-semibold text-muted transition hover:text-ink"
+          aria-expanded={showDetails}
+          onClick={() => setShowDetails((v) => !v)}
+        >
+          <ChevronRight
+            size={16}
+            aria-hidden
+            className={`transition-transform ${showDetails ? "rotate-90" : ""}`}
           />
-        </div>
-
-        <div className="flex min-w-0 flex-col gap-2">
-          {coords ? (
-            <span className="inline-flex max-w-full min-w-0 items-center gap-1.5 rounded-full bg-accent-soft px-2.5 py-1.5 text-[0.82rem] font-semibold text-accent-deep">
-              <span className="min-w-0 truncate">
-                📍 {coords.latitude.toFixed(4)}, {coords.longitude.toFixed(4)}
-              </span>
-              <button
-                type="button"
-                className="shrink-0 border-0 bg-transparent p-1 font-semibold text-accent-deep underline underline-offset-2"
-                onClick={() => onCoordsChange(null)}
-              >
-                сбросить
-              </button>
+          <span>Добавить детали</span>
+          {!showDetails && (dueAt || files.length > 0 || coords) && (
+            <span className="font-normal">
+              (
+              {[
+                dueAt ? "срок" : null,
+                files.length > 0 ? "фото" : null,
+                coords ? "место" : null,
+              ]
+                .filter(Boolean)
+                .join(", ")}
+              )
             </span>
-          ) : geoBusy ? (
-            <p className="m-0 text-[0.9rem] text-muted">Определяем координаты…</p>
-          ) : (
-            <p className="m-0 text-[0.9rem] text-muted">Точка на карте — по желанию</p>
           )}
-          <div className="flex min-w-0 flex-wrap gap-2">
-            <button
-              type="button"
-              className="btn btn--soft"
-              disabled={busy || geoBusy}
-              onClick={() => void requestMyLocation()}
-            >
-              {geoBusy ? "Определяем…" : geoError ? "Повторить" : "Моя гео"}
-            </button>
-            {onOpenMap && (
-              <button type="button" className="btn" disabled={busy} onClick={onOpenMap}>
-                На карте
-              </button>
-            )}
-          </div>
-          {geoError && (
-            <p className="m-0 break-words rounded-panel border border-[rgba(192,57,43,0.18)] bg-danger-soft px-3 py-2.5 text-[0.9rem] text-danger">
-              {geoError}
-            </p>
-          )}
-        </div>
+        </button>
+
+        {showDetails && (
+          <>
+            <div className="flex min-w-0 flex-col gap-1.5">
+              <span className="inline-flex items-center gap-1.5 text-[0.82rem] font-semibold tracking-wide text-muted">
+                <Clock size={14} aria-hidden />
+                Когда
+              </span>
+              <DueDatePicker value={dueAt} onChange={setDueAt} disabled={busy} />
+            </div>
+
+            <div className="flex min-w-0 flex-col gap-1.5">
+              <span className="inline-flex items-center gap-1.5 text-[0.82rem] font-semibold tracking-wide text-muted">
+                <ImagePlus size={14} aria-hidden />
+                Фото
+              </span>
+              <AttachmentDropzone
+                files={files}
+                onChange={setFiles}
+                onError={setError}
+                disabled={busy}
+              />
+            </div>
+
+            <div className="flex min-w-0 flex-col gap-1.5">
+              <span className="inline-flex items-center gap-1.5 text-[0.82rem] font-semibold tracking-wide text-muted">
+                <MapPin size={14} aria-hidden />
+                Где
+              </span>
+              <EditLocationField value={coords} onChange={onCoordsChange} disabled={busy} />
+            </div>
+          </>
+        )}
         {error && (
           <p className="m-0 break-words rounded-panel border border-[rgba(192,57,43,0.18)] bg-danger-soft px-3 py-2.5 text-[0.9rem] text-danger">
             {error}
@@ -145,7 +139,8 @@ export function NoteForm({ onSubmit, coords, onCoordsChange, onOpenMap }: Props)
           className="btn btn--primary btn--block shadow-none"
           disabled={busy || !text.trim()}
         >
-          {busy ? "Публикуем…" : "Опубликовать"}
+          <Sparkles size={16} aria-hidden />
+          {busy ? "Отправляем…" : "Предложить идею"}
         </button>
       </div>
     </form>

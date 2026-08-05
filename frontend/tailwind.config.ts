@@ -53,7 +53,7 @@ const config: Config = {
       boxShadow: {
         card: "var(--shadow)",
         soft: "var(--shadow-sm)",
-        accent: "0 8px 20px rgba(31, 122, 108, 0.25)",
+        accent: "0 8px 20px rgba(232, 102, 63, 0.25)",
       },
       minHeight: {
         tap: "var(--tap)",

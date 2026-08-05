@@ -27,7 +27,7 @@ export function BoardActionsModal({ open, onClose, busy, onCreate, onJoin }: Pro
       setTitle("");
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Не удалось создать");
+      setError(err instanceof Error ? err.message : "Что-то пошло не так — попробуйте ещё раз");
     }
   }
 
@@ -40,7 +40,7 @@ export function BoardActionsModal({ open, onClose, busy, onCreate, onJoin }: Pro
       setInvite("");
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Не удалось вступить");
+      setError(err instanceof Error ? err.message : "Код не подошёл — проверьте и попробуйте ещё раз");
     }
   }
 
@@ -94,7 +94,7 @@ export function BoardActionsModal({ open, onClose, busy, onCreate, onJoin }: Pro
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Команда, поездка, идеи…"
+              placeholder="Поездка на море, свидания, выходные…"
               required
               autoFocus
             />
@@ -106,11 +106,11 @@ export function BoardActionsModal({ open, onClose, busy, onCreate, onJoin }: Pro
       ) : (
         <form className="grid gap-1" onSubmit={submitJoin}>
           <label className="mb-4 flex flex-col gap-1.5">
-            <span className="text-[0.82rem] font-semibold tracking-wide text-muted">Invite-код</span>
+            <span className="text-[0.82rem] font-semibold tracking-wide text-muted">Код приглашения</span>
             <input
               value={invite}
               onChange={(e) => setInvite(e.target.value)}
-              placeholder="Вставьте код приглашения"
+              placeholder="Вставьте код от друга"
               required
               autoCapitalize="off"
               autoCorrect="off"

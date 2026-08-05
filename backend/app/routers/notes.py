@@ -12,7 +12,7 @@ from sqlalchemy.orm import selectinload
 
 from app.auth import get_current_user
 from app.database import get_db
-from app.models import AttachmentKind, Like, Note, NoteAttachment, NoteStatus, User
+from app.models import AttachmentKind, Like, Note, NoteAttachment, NoteLifecycle, NoteStatus, User
 from app.routers.boards import require_membership
 from app.schemas import (
     AttachmentIn,
@@ -112,6 +112,7 @@ async def note_to_out(note: Note, user_id: UUID, db: AsyncSession) -> NoteOut:
         author=AuthorOut.model_validate(note.author),
         text=note.text,
         status=note.status.value if isinstance(note.status, NoteStatus) else note.status,
+        lifecycle=note.lifecycle.value if isinstance(note.lifecycle, NoteLifecycle) else note.lifecycle,
         latitude=note.latitude,
         longitude=note.longitude,
         due_at=note.due_at,
@@ -152,7 +153,10 @@ async def list_notes(
     result = await db.execute(
         select(Note)
         .options(selectinload(Note.author), selectinload(Note.attachments))
-        .where(Note.board_id == board_id)
+        .where(
+            Note.board_id == board_id,
+            Note.lifecycle.in_([NoteLifecycle.proposed, NoteLifecycle.accepted]),
+        )
         .order_by(Note.created_at.desc())
     )
     notes = result.scalars().unique().all()
@@ -190,7 +194,7 @@ async def board_calendar(
     result = await db.execute(
         select(Note)
         .options(selectinload(Note.attachments))
-        .where(Note.board_id == board_id)
+        .where(Note.board_id == board_id, Note.lifecycle == NoteLifecycle.accepted)
     )
     notes = list(result.scalars().unique().all())
 
@@ -267,6 +271,7 @@ async def create_note(
         latitude=body.latitude,
         longitude=body.longitude,
         due_at=due_at,
+        lifecycle=NoteLifecycle.proposed,
     )
     db.add(note)
     await db.flush()
@@ -349,6 +354,52 @@ async def update_note(
         note.latitude = lat
         note.longitude = lng
 
+    await db.commit()
+    note = await load_note(note_id, db)
+    out = await note_to_out(note, user.id, db)
+    await manager.broadcast(note.board_id, "note.updated", out.model_dump(mode="json"))
+    return out
+
+
+@router.post("/notes/{note_id}/accept", response_model=NoteOut)
+async def accept_note(
+    note_id: UUID,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> NoteOut:
+    note = await load_note(note_id, db)
+    await require_membership(note.board_id, user, db)
+    if note.lifecycle != NoteLifecycle.proposed:
+        raise HTTPException(status_code=400, detail="Only proposed notes can be accepted")
+    if note.author_id == user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Author cannot accept their own proposal",
+        )
+    note.lifecycle = NoteLifecycle.accepted
+    await db.commit()
+    note = await load_note(note_id, db)
+    out = await note_to_out(note, user.id, db)
+    await manager.broadcast(note.board_id, "note.updated", out.model_dump(mode="json"))
+    return out
+
+
+@router.post("/notes/{note_id}/reject", response_model=NoteOut)
+async def reject_note(
+    note_id: UUID,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> NoteOut:
+    note = await load_note(note_id, db)
+    await require_membership(note.board_id, user, db)
+    if note.lifecycle != NoteLifecycle.proposed:
+        raise HTTPException(status_code=400, detail="Only proposed notes can be rejected")
+    if note.author_id == user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Author cannot reject their own proposal",
+        )
+    note.lifecycle = NoteLifecycle.rejected
     await db.commit()
     note = await load_note(note_id, db)
     out = await note_to_out(note, user.id, db)

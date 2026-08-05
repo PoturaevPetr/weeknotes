@@ -39,7 +39,7 @@ export function BoardCalendar({ boardId, token, onSelectDay }: Props) {
         if (!cancelled) setDays(res.days);
       })
       .catch(() => {
-        if (!cancelled) setError("Не удалось загрузить календарь");
+        if (!cancelled) setError("Не получилось загрузить календарь — попробуйте ещё раз");
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -112,7 +112,7 @@ export function BoardCalendar({ boardId, token, onSelectDay }: Props) {
                     info
                       ? coverSrc
                         ? {
-                            backgroundImage: `linear-gradient(rgba(20,32,28,0.45), rgba(20,32,28,0.45)), url(${coverSrc})`,
+                            backgroundImage: `linear-gradient(rgba(54,39,32,0.45), rgba(54,39,32,0.45)), url(${coverSrc})`,
                             backgroundSize: "cover",
                             backgroundPosition: "center",
                           }

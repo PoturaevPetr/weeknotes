@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { format, parseISO } from "date-fns";
 import { ru } from "date-fns/locale";
+import { CalendarDays, Check, Map as MapIcon, Share2, Sparkles } from "lucide-react";
 
 import { BoardCalendar } from "@/components/BoardCalendar";
 import { NoteCard } from "@/components/NoteCard";
@@ -18,7 +19,7 @@ import { Modal } from "@/components/ui/Modal";
 import { useBoardSocket } from "@/hooks/useBoardSocket";
 import { ApiError, api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import { formatNotesCount, notesForCalendarDay } from "@/lib/format";
+import { formatIdeasCount, formatNotesCount, notesForCalendarDay } from "@/lib/format";
 import type { AttachmentInput, Board, Note } from "@/lib/types";
 
 const BoardMap = dynamic(() => import("@/components/BoardMap"), {
@@ -31,6 +32,9 @@ const BoardMap = dynamic(() => import("@/components/BoardMap"), {
 });
 
 function mergeIncoming(prev: Note[], incoming: Note): Note[] {
+  if (incoming.lifecycle === "rejected") {
+    return prev.filter((n) => n.id !== incoming.id);
+  }
   const idx = prev.findIndex((n) => n.id === incoming.id);
   if (idx === -1) return [incoming, ...prev];
   const next = [...prev];
@@ -123,9 +127,18 @@ export function BoardView({ boardId }: { boardId: string }) {
     onUnliked,
   });
 
+  const acceptedNotes = useMemo(
+    () => notes.filter((n) => n.lifecycle === "accepted"),
+    [notes],
+  );
+  const proposedNotes = useMemo(
+    () => notes.filter((n) => n.lifecycle === "proposed"),
+    [notes],
+  );
+
   const dayNotes = useMemo(
-    () => (dayKey ? notesForCalendarDay(notes, dayKey) : []),
-    [notes, dayKey],
+    () => (dayKey ? notesForCalendarDay(acceptedNotes, dayKey) : []),
+    [acceptedNotes, dayKey],
   );
 
   const dayTitle = useMemo(() => {
@@ -155,7 +168,6 @@ export function BoardView({ boardId }: { boardId: string }) {
     setCoords(null);
     setComposeOpen(false);
     setTab("notes");
-    bumpCalendar();
   }
 
   async function toggleLike(note: Note) {
@@ -181,6 +193,21 @@ export function BoardView({ boardId }: { boardId: string }) {
     setNotes((prev) => prev.filter((n) => n.id !== note.id));
     setSelectedNote(null);
     bumpCalendar();
+  }
+
+  async function acceptNote(note: Note) {
+    if (!token) return;
+    const updated = await api.acceptNote(token, note.id);
+    setNotes((prev) => mergeIncoming(prev, updated));
+    setSelectedNote(updated);
+    bumpCalendar();
+  }
+
+  async function rejectNote(note: Note) {
+    if (!token) return;
+    await api.rejectNote(token, note.id);
+    setNotes((prev) => prev.filter((n) => n.id !== note.id));
+    setSelectedNote(null);
   }
 
   async function copyInvite() {
@@ -218,8 +245,26 @@ export function BoardView({ boardId }: { boardId: string }) {
           {board && (
             <div className="mt-1.5 flex flex-wrap items-center gap-2">
               <button type="button" className="btn btn--soft" onClick={copyInvite}>
-                {copied ? "Код скопирован" : "Поделиться"}
+                {copied ? <Check size={16} aria-hidden /> : <Share2 size={16} aria-hidden />}
+                {copied ? "Код у вас!" : "Позвать друзей"}
               </button>
+              {(
+                [
+                  ["map", "Карта", MapIcon],
+                  ["calendar", "Календарь", CalendarDays],
+                ] as const
+              ).map(([id, label, Icon]) => (
+                <button
+                  key={id}
+                  type="button"
+                  aria-pressed={tab === id}
+                  className={`btn ${tab === id ? "btn--primary" : ""}`}
+                  onClick={() => setTab(tab === id ? "notes" : id)}
+                >
+                  <Icon size={16} aria-hidden />
+                  {label}
+                </button>
+              ))}
             </div>
           )}
         </div>
@@ -234,50 +279,44 @@ export function BoardView({ boardId }: { boardId: string }) {
         </p>
       )}
 
-      <div
-        className="sticky top-[4.5rem] z-[15] mb-4 grid grid-cols-3 gap-1 rounded-full border border-line bg-white/65 p-1 backdrop-blur-md"
-        role="tablist"
-        aria-label="Разделы доски"
-      >
-        {(
-          [
-            ["notes", "Заметки"],
-            ["map", "Карта"],
-            ["calendar", "Календарь"],
-          ] as const
-        ).map(([id, label]) => (
-          <button
-            key={id}
-            type="button"
-            role="tab"
-            aria-selected={tab === id}
-            className={`min-h-[2.55rem] rounded-full border-0 px-1 text-[0.9rem] font-semibold transition sm:text-base ${
-              tab === id ? "bg-panel-solid text-ink shadow-soft" : "bg-transparent text-muted"
-            }`}
-            onClick={() => setTab(id)}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
       {tab === "notes" && (
         <section className="grid gap-3.5 animate-fade">
           <ListAddBar
-            title={formatNotesCount(notes.length)}
-            label="Добавить"
+            title={formatNotesCount(acceptedNotes.length)}
+            label="Предложить идею"
             onClick={() => {
               setError(null);
               setComposeOpen(true);
             }}
           />
           <div className="grid gap-3">
+            {proposedNotes.length > 0 && (
+              <p className="m-0 inline-flex items-center gap-1.5 text-[0.88rem] font-medium text-[#8a6b1f]">
+                <Sparkles size={15} aria-hidden />
+                {formatIdeasCount(proposedNotes.length)} от вашей компании — что берём в планы?
+              </p>
+            )}
+            {proposedNotes.map((note) => (
+              <NoteCard
+                key={note.id}
+                note={note}
+                onOpen={setSelectedNote}
+                currentUserId={user.id}
+                onAccept={acceptNote}
+                onReject={rejectNote}
+              />
+            ))}
             {notes.length === 0 && (
-              <div className="rounded-card border border-dashed border-line bg-white/40 px-4 py-8 text-center text-muted">
-                Пока пусто — нажмите «Добавить», чтобы создать заметку
+              <div className="grid justify-items-center gap-2 rounded-card border border-dashed border-line bg-white/40 px-4 py-9 text-center text-muted">
+                <Sparkles size={26} className="text-accent" aria-hidden />
+                <span>
+                  Пока тихо — добавьте первую идею:
+                  <br />
+                  куда сходим, что посмотрим, что попробуем?
+                </span>
               </div>
             )}
-            {notes.map((note) => (
+            {acceptedNotes.map((note) => (
               <NoteCard key={note.id} note={note} onOpen={setSelectedNote} />
             ))}
           </div>
@@ -291,17 +330,11 @@ export function BoardView({ boardId }: { boardId: string }) {
               Карта
             </h2>
             <p className="mb-3 text-[0.9rem] leading-snug text-muted">
-              Нажмите на карту, чтобы привязать точку к новой заметке
+              {notes.some((n) => n.latitude != null && n.longitude != null)
+                ? "Все места из ваших планов и идей — нажмите на маркер"
+                : "Здесь появятся места из ваших планов — добавьте идею с точкой на карте"}
             </p>
-            <BoardMap
-              notes={notes}
-              selected={coords}
-              onPick={(latitude, longitude) => {
-                setCoords({ latitude, longitude });
-                setComposeOpen(true);
-                setTab("notes");
-              }}
-            />
+            <BoardMap notes={notes} onOpenNote={setSelectedNote} />
           </div>
         </aside>
       )}
@@ -316,16 +349,8 @@ export function BoardView({ boardId }: { boardId: string }) {
         </section>
       )}
 
-      <Modal open={composeOpen} onClose={() => setComposeOpen(false)} title="Новая заметка">
-        <NoteForm
-          onSubmit={createNote}
-          coords={coords}
-          onCoordsChange={setCoords}
-          onOpenMap={() => {
-            setComposeOpen(false);
-            setTab("map");
-          }}
-        />
+      <Modal open={composeOpen} onClose={() => setComposeOpen(false)} title="Новая идея">
+        <NoteForm onSubmit={createNote} coords={coords} onCoordsChange={setCoords} />
       </Modal>
 
       <Modal
@@ -339,7 +364,7 @@ export function BoardView({ boardId }: { boardId: string }) {
           <div className="grid gap-3 pb-2">
             {dayNotes.length === 0 && (
               <div className="rounded-card border border-dashed border-line bg-white/40 px-4 py-8 text-center text-muted">
-                Нет заметок на этот день
+                На этот день пока ничего не запланировано
               </div>
             )}
             {dayNotes.map((note) => (
@@ -355,7 +380,12 @@ export function BoardView({ boardId }: { boardId: string }) {
         </div>
       </Modal>
 
-      <Modal open={!!selectedNote} onClose={() => setSelectedNote(null)} title="Заметка" tall>
+      <Modal
+        open={!!selectedNote}
+        onClose={() => setSelectedNote(null)}
+        title={selectedNote?.lifecycle === "proposed" ? "Идея" : "Заметка"}
+        tall
+      >
         {selectedNote && token && (
           <NoteDetailContent
             note={selectedNote}
@@ -364,6 +394,8 @@ export function BoardView({ boardId }: { boardId: string }) {
             onLike={toggleLike}
             onToggleDone={toggleDone}
             onDelete={removeNote}
+            onAccept={acceptNote}
+            onReject={rejectNote}
             onUpdated={(updated) => {
               const asList: Note = {
                 ...updated,
@@ -376,8 +408,14 @@ export function BoardView({ boardId }: { boardId: string }) {
                   }),
                 ),
               };
-              setNotes((prev) => prev.map((n) => (n.id === asList.id ? asList : n)));
-              setSelectedNote((prev) => (prev && prev.id === asList.id ? asList : prev));
+              setNotes((prev) => mergeIncoming(prev, asList));
+              setSelectedNote((prev) =>
+                prev && prev.id === asList.id
+                  ? asList.lifecycle === "rejected"
+                    ? null
+                    : asList
+                  : prev,
+              );
               bumpCalendar();
             }}
           />

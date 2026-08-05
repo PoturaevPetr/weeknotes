@@ -32,7 +32,7 @@ export default function BoardsPage() {
       .listBoards(token)
       .then(setBoards)
       .catch((err: unknown) =>
-        setError(err instanceof ApiError ? err.message : "Не удалось загрузить"),
+        setError(err instanceof ApiError ? err.message : "Не получилось загрузить доски — обновите страницу"),
       );
   }, [token]);
 
@@ -44,7 +44,7 @@ export default function BoardsPage() {
       setBoards((prev) => [board, ...prev]);
       router.push(`/boards/${board.id}`);
     } catch (err) {
-      throw new Error(err instanceof ApiError ? err.message : "Не удалось создать доску");
+      throw new Error(err instanceof ApiError ? err.message : "Что-то пошло не так — попробуйте ещё раз");
     } finally {
       setBusy(false);
     }
@@ -58,7 +58,7 @@ export default function BoardsPage() {
       setBoards((prev) => (prev.some((b) => b.id === board.id) ? prev : [board, ...prev]));
       router.push(`/boards/${board.id}`);
     } catch (err) {
-      throw new Error(err instanceof ApiError ? err.message : "Не удалось вступить");
+      throw new Error(err instanceof ApiError ? err.message : "Код не подошёл — проверьте и попробуйте ещё раз");
     } finally {
       setBusy(false);
     }
@@ -96,7 +96,7 @@ export default function BoardsPage() {
 
       <ListAddBar
         title={formatBoardsCount(boards.length)}
-        label="Добавить"
+        label="Новая доска"
         onClick={() => setModalOpen(true)}
       />
 
@@ -119,7 +119,7 @@ export default function BoardsPage() {
         ))}
         {boards.length === 0 && (
           <li className="rounded-card border border-dashed border-line bg-white/40 px-4 py-8 text-center text-muted">
-            Пока нет досок — нажмите «Добавить», чтобы создать или войти по коду
+            Здесь будут ваши общие планы — создайте доску или войдите по коду от друга
           </li>
         )}
       </ul>

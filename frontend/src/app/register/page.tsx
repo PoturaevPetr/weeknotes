@@ -28,7 +28,7 @@ export default function RegisterPage() {
       await register(email, password, displayName);
       router.replace("/boards");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Не удалось зарегистрироваться");
+      setError(err instanceof ApiError ? err.message : "Что-то пошло не так — попробуйте ещё раз");
     } finally {
       setBusy(false);
     }

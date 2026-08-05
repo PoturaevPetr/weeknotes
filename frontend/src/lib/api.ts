@@ -150,6 +150,12 @@ export const api = {
 
   unlikeNote: (token: string, noteId: string) =>
     request<Note>(`/notes/${noteId}/like`, { method: "DELETE" }, token),
+
+  acceptNote: (token: string, noteId: string) =>
+    request<Note>(`/notes/${noteId}/accept`, { method: "POST" }, token),
+
+  rejectNote: (token: string, noteId: string) =>
+    request<Note>(`/notes/${noteId}/reject`, { method: "POST" }, token),
 };
 
 export function wsUrl(boardId: string, token: string): string {

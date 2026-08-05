@@ -36,6 +36,7 @@ export type Note = {
   author: { id: string; display_name: string };
   text: string;
   status: "open" | "done";
+  lifecycle: "proposed" | "accepted" | "rejected";
   latitude: number | null;
   longitude: number | null;
   due_at: string | null;

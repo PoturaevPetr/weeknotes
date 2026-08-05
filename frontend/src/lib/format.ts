@@ -7,6 +7,23 @@ export function initials(name: string): string {
     .join("");
 }
 
+const AVATAR_PALETTES = [
+  { bg: "#ffe8de", fg: "#bf4a27" }, // персик
+  { bg: "#ffe9f0", fg: "#c2426a" }, // розовый
+  { bg: "#eae2f6", fg: "#6b58a6" }, // лаванда
+  { bg: "#e6f2eb", fg: "#3f7a60" }, // мята
+  { bg: "#fdf0d5", fg: "#a3762a" }, // мёд
+] as const;
+
+/** Stable pastel color pair for a user avatar, derived from the name. */
+export function avatarPalette(name: string): { bg: string; fg: string } {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = (hash * 31 + name.charCodeAt(i)) | 0;
+  }
+  return AVATAR_PALETTES[Math.abs(hash) % AVATAR_PALETTES.length];
+}
+
 /** Russian plural: 1 доска, 2 доски, 5 досок */
 export function pluralRu(n: number, one: string, few: string, many: string): string {
   const abs = Math.abs(n);
@@ -25,6 +42,11 @@ export function formatBoardsCount(n: number): string {
 export function formatNotesCount(n: number): string {
   if (n === 0) return "Нет заметок";
   return `${n} ${pluralRu(n, "заметка", "заметки", "заметок")}`;
+}
+
+export function formatIdeasCount(n: number): string {
+  if (n === 0) return "Нет идей";
+  return `${n} ${pluralRu(n, "идея", "идеи", "идей")}`;
 }
 
 export function formatDueDate(iso: string): string {

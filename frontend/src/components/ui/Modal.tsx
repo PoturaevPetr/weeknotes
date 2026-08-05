@@ -74,7 +74,7 @@ export function Modal({ open, onClose, title, children, tall = false }: ModalPro
     >
       <button
         type="button"
-        className={`absolute inset-0 border-0 bg-[rgba(20,32,28,0.28)] backdrop-blur-md transition-opacity duration-[280ms] ${
+        className={`absolute inset-0 border-0 bg-[rgba(54,39,32,0.28)] backdrop-blur-md transition-opacity duration-[280ms] ${
           visible ? "opacity-100" : "opacity-0"
         }`}
         aria-label="Закрыть"
@@ -82,7 +82,7 @@ export function Modal({ open, onClose, title, children, tall = false }: ModalPro
       />
       <div
         className={[
-          "relative z-[1] flex w-full min-w-0 max-w-full flex-col overflow-hidden border border-line border-b-0 bg-white shadow-[0_-8px_40px_rgba(20,32,28,0.12)]",
+          "relative z-[1] flex w-full min-w-0 max-w-full flex-col overflow-hidden border border-line border-b-0 bg-white shadow-[0_-8px_40px_rgba(54,39,32,0.12)]",
           "rounded-t-[22px] px-3.5 pb-[calc(1rem+var(--safe-bottom))] pt-1.5 sm:px-4",
           "max-h-[min(92dvh,100%)] translate-y-[110%] transition-transform duration-[280ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
           "md:max-h-[min(85dvh,720px)] md:translate-y-4 md:scale-[0.98] md:rounded-[22px] md:border md:px-5 md:pb-5 md:opacity-0 md:shadow-card md:transition-[transform,opacity] md:duration-[280ms]",

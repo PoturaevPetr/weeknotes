@@ -2,18 +2,9 @@
 
 import { useEffect } from "react";
 import { MapContainer, Marker, TileLayer, useMap } from "react-leaflet";
-import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
-const markerIcon = L.icon({
-  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-});
+import { pinIcon } from "@/lib/mapPins";
 
 type Props = {
   latitude: number;
@@ -43,13 +34,11 @@ export default function NoteLocationMap({ latitude, longitude, active = true }: 
         zoom={14}
         scrollWheelZoom={false}
         dragging
+        attributionControl={false}
         className="note-location-map__canvas"
       >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-        <Marker position={[latitude, longitude]} icon={markerIcon} />
+        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+        <Marker position={[latitude, longitude]} icon={pinIcon("note")} />
         <ResizeWhenActive active={active} />
       </MapContainer>
     </div>

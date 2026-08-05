@@ -132,6 +132,7 @@ class NoteOut(BaseModel):
     author: AuthorOut
     text: str
     status: str
+    lifecycle: str = "accepted"
     latitude: Optional[float]
     longitude: Optional[float]
     due_at: Optional[datetime]

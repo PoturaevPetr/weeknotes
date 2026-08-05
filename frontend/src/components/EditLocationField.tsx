@@ -61,7 +61,7 @@ export function EditLocationField({ value, onChange, disabled }: Props) {
         aria-expanded={open}
         onClick={toggle}
       >
-        <span className="font-semibold text-ink">Геометка</span>
+        <span className="font-semibold text-ink">Место на карте</span>
         {value ? (
           <span className="whitespace-nowrap rounded-full bg-accent-soft px-2.5 py-0.5 text-[0.86rem] font-semibold text-accent-deep">
             {value.latitude.toFixed(4)}, {value.longitude.toFixed(4)}
@@ -86,7 +86,7 @@ export function EditLocationField({ value, onChange, disabled }: Props) {
           {bodyReady && (
             <div className="grid gap-2.5 p-3">
               <p className="m-0 text-center text-sm text-muted">
-                {geoBusy ? "Определяем координаты…" : "Нажмите на карту, чтобы поставить метку"}
+                {geoBusy ? "Ищем вас на карте…" : "Нажмите на карту, чтобы поставить метку"}
               </p>
               <NoteLocationPicker value={value} onChange={onChange} active={open} />
               <div className="note-form__geo-actions flex flex-wrap items-center gap-2.5">
@@ -96,7 +96,7 @@ export function EditLocationField({ value, onChange, disabled }: Props) {
                   disabled={disabled || geoBusy}
                   onClick={() => void requestMyLocation()}
                 >
-                  {geoBusy ? "Определяем…" : geoError ? "Повторить" : "Моя гео"}
+                  {geoBusy ? "Ищем…" : geoError ? "Попробовать ещё" : "Я здесь"}
                 </button>
                 {value && (
                   <button

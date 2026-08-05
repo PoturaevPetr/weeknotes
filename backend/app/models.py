@@ -32,6 +32,12 @@ class NoteStatus(str, enum.Enum):
     done = "done"
 
 
+class NoteLifecycle(str, enum.Enum):
+    proposed = "proposed"
+    accepted = "accepted"
+    rejected = "rejected"
+
+
 class AttachmentKind(str, enum.Enum):
     image = "image"
     video = "video"
@@ -90,6 +96,10 @@ class Note(Base):
     author_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"))
     text: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[NoteStatus] = mapped_column(Enum(NoteStatus, name="note_status"), default=NoteStatus.open)
+    lifecycle: Mapped[NoteLifecycle] = mapped_column(
+        Enum(NoteLifecycle, name="note_lifecycle"),
+        default=NoteLifecycle.proposed,
+    )
     latitude: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     longitude: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     due_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
