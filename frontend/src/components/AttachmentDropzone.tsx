@@ -109,7 +109,7 @@ export function AttachmentDropzone({
         <span className="max-w-full text-balance text-[0.8rem] leading-snug text-muted">
           или нажмите, чтобы выбрать фото
         </span>
-        <span className="text-[0.8rem] text-muted">До 2.5MB каждое</span>
+        <span className="text-[0.8rem] text-muted">До 15MB каждое</span>
       </button>
 
       <input

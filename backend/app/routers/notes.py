@@ -33,7 +33,7 @@ from app.ws import manager
 router = APIRouter(tags=["notes"])
 
 MAX_ATTACHMENTS = 10
-MAX_IMAGE_BYTES = 2_500_000
+MAX_IMAGE_BYTES = 15 * 1024 * 1024
 ALLOWED_IMAGE = {"image/jpeg", "image/png", "image/webp", "image/gif"}
 
 
@@ -59,7 +59,7 @@ def _validate_attachment(item: AttachmentIn) -> tuple[AttachmentKind, str, int]:
     if mime not in ALLOWED_IMAGE:
         raise HTTPException(status_code=400, detail=f"Unsupported image type: {mime}")
     if size > MAX_IMAGE_BYTES:
-        raise HTTPException(status_code=400, detail="Image too large (max ~2.5MB)")
+        raise HTTPException(status_code=400, detail="Image too large (max 15MB)")
 
     return AttachmentKind.image, raw, size
 

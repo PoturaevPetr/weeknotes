@@ -2,7 +2,7 @@ import type { AttachmentInput } from "@/lib/types";
 
 /** Soft server limit — do not mention in UI. */
 export const MAX_ATTACHMENTS = 10;
-export const MAX_IMAGE_BYTES = 2.5 * 1024 * 1024;
+export const MAX_IMAGE_BYTES = 15 * 1024 * 1024;
 
 export type DraftAttachment = AttachmentInput & {
   preview?: string;
@@ -27,7 +27,7 @@ export function readFileAsAttachment(file: File): Promise<DraftAttachment> {
       return;
     }
     if (file.size > MAX_IMAGE_BYTES) {
-      reject(new Error("Изображение больше 2.5MB"));
+      reject(new Error("Изображение больше 15MB"));
       return;
     }
 

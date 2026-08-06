@@ -257,80 +257,82 @@ export function NoteDetailContent({
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-x-hidden overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch]">
-      <div className="mb-2.5 flex items-start gap-2.5">
-        <div
-          className="grid h-[2.1rem] w-[2.1rem] shrink-0 place-items-center rounded-full text-[0.8rem] font-bold"
-          style={{
-            background: avatarPalette(view.author.display_name).bg,
-            color: avatarPalette(view.author.display_name).fg,
-          }}
-          aria-hidden
-        >
-          {initials(view.author.display_name)}
-        </div>
-        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <strong className="text-[0.92rem] font-bold text-ink">{view.author.display_name}</strong>
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[0.8rem] text-muted">
-            <time dateTime={view.created_at}>{formatNoteTime(view.created_at)}</time>
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch]">
+        <div className="mb-2.5 flex items-start gap-2.5">
+          <div
+            className="grid h-[2.1rem] w-[2.1rem] shrink-0 place-items-center rounded-full text-[0.8rem] font-bold"
+            style={{
+              background: avatarPalette(view.author.display_name).bg,
+              color: avatarPalette(view.author.display_name).fg,
+            }}
+            aria-hidden
+          >
+            {initials(view.author.display_name)}
+          </div>
+          <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+            <strong className="text-[0.92rem] font-bold text-ink">{view.author.display_name}</strong>
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[0.8rem] text-muted">
+              <time dateTime={view.created_at}>{formatNoteTime(view.created_at)}</time>
+            </div>
           </div>
         </div>
-      </div>
 
-      {isProposed && (
-        <p className="mb-2 inline-flex items-center justify-center gap-1.5 self-center rounded-full bg-[#f7e9c4] px-3 py-1.5 text-center text-[0.82rem] font-semibold text-[#8a6b1f]">
-          <Sparkles size={14} aria-hidden />
-          Идея — решите вместе, берёте ли в планы
+        {isProposed && (
+          <p className="mb-2 inline-flex items-center justify-center gap-1.5 self-center rounded-full bg-[#f7e9c4] px-3 py-1.5 text-center text-[0.82rem] font-semibold text-[#8a6b1f]">
+            <Sparkles size={14} aria-hidden />
+            Идея — решите вместе, берёте ли в планы
+          </p>
+        )}
+
+        {view.due_at && (
+          <div
+            className={[
+              "mb-2 inline-flex items-center gap-1 self-start rounded-full px-2.5 py-1 text-[0.82rem] font-semibold",
+              urgent ? "bg-amber-100 text-amber-900" : "bg-white/70 text-muted",
+            ].join(" ")}
+          >
+            <Clock size={13} aria-hidden />
+            <span>до {formatDueDate(view.due_at)}</span>
+          </div>
+        )}
+
+        <p className="m-0 whitespace-pre-wrap pb-4 text-[1.05rem] leading-relaxed text-ink">
+          {view.text}
         </p>
-      )}
 
-      {view.due_at && (
-        <div
-          className={[
-            "mb-2 inline-flex items-center gap-1 self-start rounded-full px-2.5 py-1 text-[0.82rem] font-semibold",
-            urgent ? "bg-amber-100 text-amber-900" : "bg-white/70 text-muted",
-          ].join(" ")}
-        >
-          <Clock size={13} aria-hidden />
-          <span>до {formatDueDate(view.due_at)}</span>
-        </div>
-      )}
+        {view.latitude != null && view.longitude != null && (
+          <div className="mb-1 mt-3">
+            <LocationMapAccordion latitude={view.latitude} longitude={view.longitude} />
+          </div>
+        )}
 
-      <p className="m-0 flex-1 overflow-auto whitespace-pre-wrap pb-4 text-[1.05rem] leading-relaxed text-ink">
-        {view.text}
-      </p>
+        {loadError && <p className="m-0 text-[0.9rem] text-muted">{loadError}</p>}
+        {!detail && (note.attachments?.length ?? 0) > 0 && !loadError && (
+          <p className="m-0 text-[0.9rem] text-muted">Загружаем фото…</p>
+        )}
 
-      {view.latitude != null && view.longitude != null && (
-        <div className="mb-1 mt-3">
-          <LocationMapAccordion latitude={view.latitude} longitude={view.longitude} />
-        </div>
-      )}
-
-      {loadError && <p className="m-0 text-[0.9rem] text-muted">{loadError}</p>}
-      {!detail && (note.attachments?.length ?? 0) > 0 && !loadError && (
-        <p className="m-0 text-[0.9rem] text-muted">Загружаем фото…</p>
-      )}
-
-      {attachments.length > 0 && (
-        <div className="mb-4 grid gap-2.5">
-          {attachments.map((a, i) => (
-            <button
-              key={a.id}
-              type="button"
-              className="relative block w-full cursor-zoom-in overflow-hidden rounded-panel border-0 bg-transparent p-0 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-              onClick={() => setLightboxIndex(i)}
-              aria-label={`Открыть ${a.filename}`}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={mediaSrc(a.mime_type, a.data_base64)}
-                alt={a.filename}
-                className="pointer-events-none block max-h-[220px] w-full rounded-panel border border-line bg-[#f2ebe1] object-cover"
-              />
-            </button>
-          ))}
-        </div>
-      )}
+        {attachments.length > 0 && (
+          <div className="mb-2 grid gap-2.5">
+            {attachments.map((a, i) => (
+              <button
+                key={a.id}
+                type="button"
+                className="relative block w-full cursor-zoom-in overflow-hidden rounded-panel border-0 bg-transparent p-0 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                onClick={() => setLightboxIndex(i)}
+                aria-label={`Открыть ${a.filename}`}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={mediaSrc(a.mime_type, a.data_base64)}
+                  alt={a.filename}
+                  className="pointer-events-none block max-h-[220px] w-full rounded-panel border border-line bg-[#f2ebe1] object-cover"
+                />
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
 
       {lightboxIndex != null && attachments.length > 0 && (
         <MediaLightbox
@@ -341,7 +343,7 @@ export function NoteDetailContent({
         />
       )}
 
-      <div className="mt-4 flex items-center gap-1.5">
+      <div className="mt-3 flex shrink-0 items-center gap-1.5 border-t border-line pt-3">
         {canModerate && (
           <>
             <button
