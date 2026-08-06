@@ -2,6 +2,7 @@ import type {
   AttachmentInput,
   Board,
   CalendarResponse,
+  Comment,
   Note,
   NoteDetail,
   User,
@@ -156,6 +157,25 @@ export const api = {
 
   rejectNote: (token: string, noteId: string) =>
     request<Note>(`/notes/${noteId}/reject`, { method: "POST" }, token),
+
+  listComments: (token: string, noteId: string) =>
+    request<Comment[]>(`/notes/${noteId}/comments`, {}, token),
+
+  addComment: (token: string, noteId: string, text: string) =>
+    request<Comment>(
+      `/notes/${noteId}/comments`,
+      { method: "POST", body: JSON.stringify({ text }) },
+      token,
+    ),
+
+  deleteComment: (token: string, commentId: string) =>
+    request<void>(`/comments/${commentId}`, { method: "DELETE" }, token),
+
+  likeComment: (token: string, commentId: string) =>
+    request<Comment>(`/comments/${commentId}/like`, { method: "POST" }, token),
+
+  unlikeComment: (token: string, commentId: string) =>
+    request<Comment>(`/comments/${commentId}/like`, { method: "DELETE" }, token),
 };
 
 export function wsUrl(boardId: string, token: string): string {

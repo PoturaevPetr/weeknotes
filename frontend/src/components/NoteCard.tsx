@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, CircleCheck, Clock, Sparkles, X } from "lucide-react";
+import { Check, CircleCheck, Clock, MessageCircle, Sparkles, X } from "lucide-react";
 
 import type { Note } from "@/lib/types";
 import { avatarPalette, formatDueDate, formatNoteTime, initials, isDueSoon } from "@/lib/format";
@@ -20,6 +20,7 @@ export function NoteCard({ note, onOpen, currentUserId, onAccept, onReject }: Pr
   const canModerate =
     proposed && !!currentUserId && note.author.id !== currentUserId && (!!onAccept || !!onReject);
   const avatar = avatarPalette(note.author.display_name);
+  const showDue = !proposed && !!note.due_at;
 
   return (
     <div
@@ -87,15 +88,25 @@ export function NoteCard({ note, onOpen, currentUserId, onAccept, onReject }: Pr
       >
         {note.text}
       </p>
-      {!proposed && note.due_at && (
-        <div
-          className={[
-            "mt-2.5 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[0.8rem] font-semibold",
-            urgent ? "bg-amber-100 text-amber-900" : "bg-white/70 text-muted",
-          ].join(" ")}
-        >
-          <Clock size={13} aria-hidden />
-          <span>до {formatDueDate(note.due_at)}</span>
+      {(showDue || note.comments_count > 0) && (
+        <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+          {showDue && note.due_at && (
+            <div
+              className={[
+                "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[0.8rem] font-semibold",
+                urgent ? "bg-amber-100 text-amber-900" : "bg-white/70 text-muted",
+              ].join(" ")}
+            >
+              <Clock size={13} aria-hidden />
+              <span>до {formatDueDate(note.due_at)}</span>
+            </div>
+          )}
+          {note.comments_count > 0 && (
+            <div className="inline-flex items-center gap-1.5 rounded-full bg-white/70 px-2.5 py-1 text-[0.8rem] font-semibold text-muted">
+              <MessageCircle size={13} aria-hidden />
+              <span>{note.comments_count}</span>
+            </div>
+          )}
         </div>
       )}
       {canModerate && (

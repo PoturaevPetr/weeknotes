@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import base64
 import binascii
+from collections.abc import Sequence
+from dataclasses import dataclass
 from datetime import date, datetime, timezone
 from uuid import UUID
 
@@ -12,7 +14,16 @@ from sqlalchemy.orm import selectinload
 
 from app.auth import get_current_user
 from app.database import get_db
-from app.models import AttachmentKind, Like, Note, NoteAttachment, NoteLifecycle, NoteStatus, User
+from app.models import (
+    AttachmentKind,
+    Like,
+    Note,
+    NoteAttachment,
+    NoteComment,
+    NoteLifecycle,
+    NoteStatus,
+    User,
+)
 from app.routers.boards import require_membership
 from app.schemas import (
     AttachmentIn,
@@ -103,9 +114,58 @@ def _as_utc(dt: datetime) -> datetime:
     return dt.astimezone(timezone.utc)
 
 
-async def note_to_out(note: Note, user_id: UUID, db: AsyncSession) -> NoteOut:
-    likes_count = await db.scalar(select(func.count()).select_from(Like).where(Like.note_id == note.id))
-    liked = await db.scalar(select(Like.id).where(Like.note_id == note.id, Like.user_id == user_id))
+@dataclass(frozen=True)
+class NoteStats:
+    likes_count: int = 0
+    liked_by_me: bool = False
+    comments_count: int = 0
+
+
+async def load_note_stats(
+    note_ids: Sequence[UUID], user_id: UUID, db: AsyncSession
+) -> dict[UUID, NoteStats]:
+    """Aggregate likes and comment counts for many notes in two queries."""
+    ids = list(note_ids)
+    if not ids:
+        return {}
+
+    like_rows = await db.execute(
+        select(
+            Like.note_id,
+            func.count().label("total"),
+            func.count().filter(Like.user_id == user_id).label("mine"),
+        )
+        .where(Like.note_id.in_(ids))
+        .group_by(Like.note_id)
+    )
+    likes = {row.note_id: (int(row.total), int(row.mine) > 0) for row in like_rows}
+
+    comment_rows = await db.execute(
+        select(NoteComment.note_id, func.count().label("total"))
+        .where(NoteComment.note_id.in_(ids))
+        .group_by(NoteComment.note_id)
+    )
+    comments = {row.note_id: int(row.total) for row in comment_rows}
+
+    result: dict[UUID, NoteStats] = {}
+    for note_id in ids:
+        total, mine = likes.get(note_id, (0, False))
+        result[note_id] = NoteStats(
+            likes_count=total,
+            liked_by_me=mine,
+            comments_count=comments.get(note_id, 0),
+        )
+    return result
+
+
+async def note_to_out(
+    note: Note,
+    user_id: UUID,
+    db: AsyncSession,
+    stats: NoteStats | None = None,
+) -> NoteOut:
+    if stats is None:
+        stats = (await load_note_stats([note.id], user_id, db)).get(note.id, NoteStats())
     return NoteOut(
         id=note.id,
         board_id=note.board_id,
@@ -117,8 +177,9 @@ async def note_to_out(note: Note, user_id: UUID, db: AsyncSession) -> NoteOut:
         longitude=note.longitude,
         due_at=note.due_at,
         completed_at=note.completed_at,
-        likes_count=int(likes_count or 0),
-        liked_by_me=liked is not None,
+        likes_count=stats.likes_count,
+        liked_by_me=stats.liked_by_me,
+        comments_count=stats.comments_count,
         attachments=_meta_attachments(note),
         created_at=note.created_at,
         updated_at=note.updated_at,
@@ -160,7 +221,8 @@ async def list_notes(
         .order_by(Note.created_at.desc())
     )
     notes = result.scalars().unique().all()
-    return [await note_to_out(n, user.id, db) for n in notes]
+    stats = await load_note_stats([n.id for n in notes], user.id, db)
+    return [await note_to_out(n, user.id, db, stats.get(n.id, NoteStats())) for n in notes]
 
 
 @router.get("/boards/{board_id}/calendar", response_model=CalendarOut)

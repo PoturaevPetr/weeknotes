@@ -49,6 +49,11 @@ export function formatIdeasCount(n: number): string {
   return `${n} ${pluralRu(n, "идея", "идеи", "идей")}`;
 }
 
+export function formatCommentsCount(n: number): string {
+  if (n === 0) return "Комментариев пока нет";
+  return `${n} ${pluralRu(n, "комментарий", "комментария", "комментариев")}`;
+}
+
 export function formatDueDate(iso: string): string {
   return new Date(iso).toLocaleString("ru-RU", {
     day: "numeric",

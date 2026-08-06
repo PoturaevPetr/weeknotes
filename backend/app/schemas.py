@@ -139,6 +139,7 @@ class NoteOut(BaseModel):
     completed_at: Optional[datetime] = None
     likes_count: int
     liked_by_me: bool
+    comments_count: int = 0
     attachments: List[AttachmentMetaOut] = []
     created_at: datetime
     updated_at: datetime
@@ -148,6 +149,22 @@ class NoteOut(BaseModel):
 
 class NoteDetailOut(NoteOut):
     attachments: List[AttachmentOut] = Field(default_factory=list)  # type: ignore[assignment]
+
+
+class CommentCreate(BaseModel):
+    text: str = Field(min_length=1, max_length=2000)
+
+
+class CommentOut(BaseModel):
+    id: uuid.UUID
+    note_id: uuid.UUID
+    author: AuthorOut
+    text: str
+    likes_count: int
+    liked_by_me: bool
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
 
 
 class CalendarCoverOut(BaseModel):

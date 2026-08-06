@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { format, parseISO } from "date-fns";
 import { ru } from "date-fns/locale";
 import { CalendarDays, Check, Map as MapIcon, Share2, Sparkles } from "lucide-react";
@@ -20,7 +20,7 @@ import { useBoardSocket } from "@/hooks/useBoardSocket";
 import { ApiError, api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { formatIdeasCount, formatNotesCount, notesForCalendarDay } from "@/lib/format";
-import type { AttachmentInput, Board, Note } from "@/lib/types";
+import type { AttachmentInput, Board, CommentEvent, Note } from "@/lib/types";
 
 const BoardMap = dynamic(() => import("@/components/BoardMap"), {
   ssr: false,
@@ -58,6 +58,9 @@ export function BoardView({ boardId }: { boardId: string }) {
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [dayKey, setDayKey] = useState<string | null>(null);
   const [calendarTick, setCalendarTick] = useState(0);
+  // The socket room is the board, so comment events are fanned out to whichever
+  // note detail is currently open.
+  const commentListeners = useRef(new Set<(event: CommentEvent) => void>());
 
   useEffect(() => {
     if (!loading && !token) router.replace("/login");
@@ -119,12 +122,39 @@ export function BoardView({ boardId }: { boardId: string }) {
     setNotes((prev) => mergeIncoming(prev, note));
   }, []);
 
+  const setCommentsCount = useCallback((noteId: string, count: number) => {
+    setNotes((prev) => {
+      const idx = prev.findIndex((n) => n.id === noteId);
+      if (idx === -1 || prev[idx].comments_count === count) return prev;
+      const next = [...prev];
+      next[idx] = { ...next[idx], comments_count: count };
+      return next;
+    });
+  }, []);
+
+  const subscribeComments = useCallback((listener: (event: CommentEvent) => void) => {
+    const listeners = commentListeners.current;
+    listeners.add(listener);
+    return () => {
+      listeners.delete(listener);
+    };
+  }, []);
+
+  const onComment = useCallback(
+    (event: CommentEvent) => {
+      if (event.kind !== "likes") setCommentsCount(event.note_id, event.comments_count);
+      commentListeners.current.forEach((listener) => listener(event));
+    },
+    [setCommentsCount],
+  );
+
   useBoardSocket(boardId, token, {
     onCreated,
     onUpdated,
     onDeleted,
     onLiked,
     onUnliked,
+    onComment,
   });
 
   const acceptedNotes = useMemo(
@@ -396,6 +426,8 @@ export function BoardView({ boardId }: { boardId: string }) {
             onDelete={removeNote}
             onAccept={acceptNote}
             onReject={rejectNote}
+            subscribeComments={subscribeComments}
+            onCommentsCountChange={setCommentsCount}
             onUpdated={(updated) => {
               const asList: Note = {
                 ...updated,

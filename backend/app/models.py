@@ -11,6 +11,7 @@ from sqlalchemy import (
     Enum,
     Float,
     ForeignKey,
+    Index,
     String,
     Text,
     UniqueConstraint,
@@ -56,6 +57,7 @@ class User(Base):
     memberships: Mapped[List["BoardMember"]] = relationship(back_populates="user")
     notes: Mapped[List["Note"]] = relationship(back_populates="author")
     likes: Mapped[List["Like"]] = relationship(back_populates="user")
+    comments: Mapped[List["NoteComment"]] = relationship(back_populates="author")
 
 
 class Board(Base):
@@ -115,6 +117,9 @@ class Note(Base):
     attachments: Mapped[List["NoteAttachment"]] = relationship(
         back_populates="note", cascade="all, delete-orphan"
     )
+    comments: Mapped[List["NoteComment"]] = relationship(
+        back_populates="note", cascade="all, delete-orphan"
+    )
 
 
 class NoteAttachment(Base):
@@ -142,3 +147,34 @@ class Like(Base):
 
     note: Mapped["Note"] = relationship(back_populates="likes")
     user: Mapped["User"] = relationship(back_populates="likes")
+
+
+class NoteComment(Base):
+    __tablename__ = "note_comments"
+    __table_args__ = (Index("ix_note_comments_note_created", "note_id", "created_at"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    note_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("notes.id", ondelete="CASCADE"))
+    author_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"))
+    text: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    note: Mapped["Note"] = relationship(back_populates="comments")
+    author: Mapped["User"] = relationship(back_populates="comments")
+    likes: Mapped[List["CommentLike"]] = relationship(
+        back_populates="comment", cascade="all, delete-orphan"
+    )
+
+
+class CommentLike(Base):
+    __tablename__ = "comment_likes"
+    __table_args__ = (UniqueConstraint("comment_id", "user_id", name="uq_comment_like"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    comment_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("note_comments.id", ondelete="CASCADE")
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    comment: Mapped["NoteComment"] = relationship(back_populates="likes")

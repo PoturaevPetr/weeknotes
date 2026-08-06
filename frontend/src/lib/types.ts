@@ -43,10 +43,30 @@ export type Note = {
   completed_at: string | null;
   likes_count: number;
   liked_by_me: boolean;
+  comments_count: number;
   attachments: AttachmentMeta[];
   created_at: string;
   updated_at: string;
 };
+
+export type Comment = {
+  id: string;
+  note_id: string;
+  author: { id: string; display_name: string };
+  text: string;
+  likes_count: number;
+  liked_by_me: boolean;
+  created_at: string;
+};
+
+/**
+ * Comment updates arriving over the board socket. Like events carry only the
+ * shared total — `liked_by_me` is per-user and stays with each client.
+ */
+export type CommentEvent =
+  | { kind: "created"; note_id: string; comments_count: number; comment: Comment }
+  | { kind: "deleted"; note_id: string; comment_id: string; comments_count: number }
+  | { kind: "likes"; note_id: string; comment_id: string; likes_count: number };
 
 export type NoteDetail = Omit<Note, "attachments"> & {
   attachments: Attachment[];
